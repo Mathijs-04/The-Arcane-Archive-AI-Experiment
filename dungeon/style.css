@@ -1,0 +1,742 @@
+@font-face {
+    font-family: 'font';
+    src: url('fonts/font.otf') format('opentype');
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'font2';
+    src: url('fonts/font2.otf') format('opentype');
+    font-display: block;
+}
+
+:root {
+    --ink: #100e0c;
+    --paper: #e9e4d8;
+    --ember: 255, 170, 82;
+    --chain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cellipse cx='7' cy='6' rx='5.6' ry='3.4' fill='none' stroke='%23100e0c' stroke-width='1.9'/%3E%3Crect x='11.5' y='4.9' width='12' height='2.2' rx='1.1' fill='%23100e0c'/%3E%3C/svg%3E");
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #050403;
+    color: #fff;
+    font-family: 'font2', serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    cursor: crosshair;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.svg-filters {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Stone layers                                                        */
+/* ------------------------------------------------------------------ */
+
+.layer {
+    position: fixed;
+    inset: -4%;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.layer canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.layer--far   { z-index: -18; }
+.smoke--high  { z-index: -16; }
+.layer--mid   { z-index: -15; }
+.smoke--mid   { z-index: -14; }
+.layer--near  { z-index: -13; }
+.smoke--low   { z-index: -12; }
+
+.darkness,
+.glow {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.darkness { z-index: -11; }
+
+.glow {
+    z-index: -10;
+    mix-blend-mode: screen;
+}
+
+/* ------------------------------------------------------------------ */
+/* Smoke, pooling under the vaults and creeping over the floor        */
+/* ------------------------------------------------------------------ */
+
+.smoke {
+    position: fixed;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.smoke--high {
+    top: 0;
+    height: 55%;
+    opacity: 0.16;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 100%);
+}
+
+.smoke--mid {
+    top: 28%;
+    height: 50%;
+    opacity: 0.1;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%, #000 60%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 40%, #000 60%, transparent);
+}
+
+.smoke--low {
+    bottom: 0;
+    height: 32%;
+    opacity: 0.2;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 50%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 50%);
+}
+
+.smoke__drift {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background-image: var(--smoke-tex-1);
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    animation: smoke-drift 220s linear infinite;
+}
+
+.smoke__drift--2 {
+    background-image: var(--smoke-tex-2);
+    animation-duration: 150s;
+    animation-direction: reverse;
+    opacity: 0.7;
+}
+
+.smoke--low .smoke__drift { animation-duration: 120s; }
+.smoke--low .smoke__drift--2 { animation-duration: 85s; }
+
+@keyframes smoke-drift {
+    to { transform: translateX(-50%); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Atmosphere                                                          */
+/* ------------------------------------------------------------------ */
+
+.vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.78) 100%);
+}
+
+.grain {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.18;
+    background: url("images/noise.gif") repeat;
+}
+
+.grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.05' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.1;
+    mix-blend-mode: multiply;
+}
+
+/* ------------------------------------------------------------------ */
+/* The psalter page                                                    */
+/* ------------------------------------------------------------------ */
+
+.psalter {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 92vw, calc((100vh - 150px) * 1.3));
+    width: min(560px, 92vw, calc((100dvh - 150px) * 1.3));
+    display: flex;
+    flex-direction: column;
+    translate: 0 -1vh;
+}
+
+.psalter__title {
+    position: relative;
+    z-index: 2;
+    margin: 0 0 -0.72rem 6px;
+    font-family: 'font', serif;
+    font-weight: normal;
+    font-size: clamp(1.3rem, 3vw, 2.05rem);
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.ink {
+    display: inline-block;
+    -webkit-font-smoothing: antialiased;
+    filter: url(#vintage-print);
+}
+
+.psalter__title .ink {
+    color: #f1ece2;
+    text-shadow: 0 0 22px rgba(var(--ember), 0.2);
+}
+
+.psalter__hint {
+    margin: 1.4rem 0 0;
+    text-align: center;
+    font-size: 0.82rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(240, 225, 205, 0.32);
+    transition: opacity 1.2s ease;
+}
+
+.psalter__hint.is-gone {
+    opacity: 0;
+}
+
+.card-wrap {
+    container-type: inline-size;
+    filter:
+        drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.1))
+        drop-shadow(4px 5px 0 #221d18)
+        drop-shadow(0 20px 44px rgba(0, 0, 0, 0.7));
+}
+
+.card {
+    --fill: #8a8274;
+    --cover: 38cqw;
+    --bracket: 22cqw;
+
+    position: relative;
+    transform: rotate(0.3deg);
+    clip-path: polygon(
+        0.9% 1.4%, 7% 0.6%, 15% 1.1%, 19% 0.3%, 33% 0.9%, 48% 0.4%, 61% 1%, 64% 0.2%, 79% 0.8%, 92% 0.3%,
+        99.1% 1.8%, 98.6% 11%, 99.5% 19%, 98.8% 33%, 99.3% 47%, 98.4% 49.5%, 99.2% 52%, 98.9% 69%,
+        99.4% 84%, 98.7% 98.4%, 90% 99.5%, 77% 98.9%, 63% 99.6%, 52% 99%, 50% 98.2%, 48% 99.3%, 31% 99.5%,
+        16% 98.8%, 4% 99.4%, 0.6% 97.8%, 1.1% 85%, 0.4% 72%, 1% 58%, 0.3% 41%, 0.9% 24%, 0.5% 10%
+    );
+    transition: transform 0.6s ease;
+}
+
+.card__surface {
+    position: absolute;
+    inset: 0;
+    isolation: isolate;
+    background:
+        radial-gradient(ellipse 60% 45% at 35% 35%, rgba(255, 245, 220, 0.08), transparent 70%),
+        var(--fill);
+}
+
+.card__texture {
+    position: absolute;
+    inset: 0;
+    opacity: 0.2;
+    background-color: #000;
+    -webkit-mask-image: url("images/Texture-Overlay.png");
+    mask-image: url("images/Texture-Overlay.png");
+    -webkit-mask-repeat: repeat;
+    mask-repeat: repeat;
+}
+
+.card__patina {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.card__surface::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(172deg, rgba(255, 255, 255, 0.06) 0%, transparent 38%, rgba(0, 0, 0, 0.06) 74%, transparent 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: auto, 160px 160px;
+    mix-blend-mode: multiply;
+    opacity: 0.7;
+}
+
+.card__layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: var(--cover) minmax(0, 1fr);
+    column-gap: 5.2cqw;
+    padding: 4.6cqw 4.6cqw 10.5cqw;
+    color: var(--ink);
+    transition: opacity 0.45s ease, filter 0.45s ease;
+}
+
+.card.is-turning .card__layout {
+    opacity: 0;
+    filter: blur(2px);
+}
+
+/* Cover */
+
+.cover {
+    position: relative;
+    margin: 0;
+    width: var(--cover);
+    aspect-ratio: 1;
+    transform: translate(-0.6cqw, -1.6cqw) rotate(0.6deg);
+    filter:
+        drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.08))
+        drop-shadow(3px 4px 0 #3e3830);
+    clip-path: polygon(0.8% 0.6%, 33% 1%, 70% 0.4%, 99.2% 0.9%, 99.5% 38%, 98.8% 72%, 99.4% 99.3%, 64% 99%, 30% 99.5%, 0.5% 99.1%, 0.9% 61%, 0.4% 27%);
+}
+
+.cover__art {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    opacity: 0.32;
+    background:
+        repeating-linear-gradient(89deg, transparent 0 3px, rgba(0, 0, 0, 0.05) 3px 4px),
+        radial-gradient(ellipse at 30% 30%, transparent 40%, rgba(70, 45, 20, 0.4) 100%);
+}
+
+/* Info */
+
+.info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-top: 10.5cqw;
+}
+
+.info__kicker {
+    margin: 0 0 0.6cqw;
+    font-size: 2.5cqw;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(16, 14, 12, 0.7);
+}
+
+.info__title {
+    margin: 0;
+    font-family: 'font2', serif;
+    font-size: 5.5cqw;
+    font-weight: 700;
+    font-synthesis: weight;
+    line-height: 1.12;
+}
+
+.info__title .ink {
+    color: var(--ink);
+    -webkit-text-stroke: 0.02em currentColor;
+    paint-order: stroke fill;
+}
+
+.info__artist {
+    margin: 0.35em 0 0;
+    font-size: 3.7cqw;
+    font-weight: 650;
+    font-synthesis: weight;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(16, 14, 12, 0.74);
+}
+
+/* Candles: the equaliser. Unlit until the music starts. */
+
+.candles {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 2.2cqw;
+    height: 11cqw;
+    margin-top: auto;
+    padding: 0 1cqw;
+    border-bottom: 2px solid rgba(16, 14, 12, 0.7);
+    max-width: 58cqw;
+}
+
+.candle {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--w);
+    height: var(--h);
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent 40%, rgba(0, 0, 0, 0.3)),
+        var(--ink);
+    border-radius: 0.5cqw 0.5cqw 0.1cqw 0.1cqw / 0.9cqw 0.9cqw 0.1cqw 0.1cqw;
+}
+
+/* a drip of wax down the side */
+.candle::before {
+    content: "";
+    position: absolute;
+    top: -0.2cqw;
+    left: var(--drip-x);
+    width: 0.8cqw;
+    height: var(--drip);
+    border-radius: 0 0 0.5cqw 0.5cqw;
+    background: var(--ink);
+    box-shadow: 0 0 0 0.25cqw var(--ink);
+}
+
+.candle__wick {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    width: 0.35cqw;
+    height: 1cqw;
+    translate: -50% 0;
+    background: var(--ink);
+}
+
+.candle__flame {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 0.5cqw);
+    width: 1.7cqw;
+    height: 3.6cqw;
+    translate: -50% 0;
+    transform-origin: 50% 90%;
+    border-radius: 50% 50% 50% 50% / 64% 64% 36% 36%;
+    background: radial-gradient(ellipse 50% 60% at 50% 72%, #fff8e2 0 22%, #ffcf7a 42%, rgba(255, 150, 60, 0.85) 62%, rgba(255, 120, 40, 0) 78%);
+    box-shadow: 0 0 1.6cqw 0.5cqw rgba(var(--ember), 0.35);
+    transform: scale(0);
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    transition-delay: var(--light-delay);
+}
+
+.candles[data-state="playing"] .candle__flame {
+    transform: scale(1);
+    opacity: 1;
+    animation: flame-dance var(--flick) ease-in-out infinite alternate;
+    animation-delay: var(--light-delay);
+}
+
+@keyframes flame-dance {
+    0% { transform: scale(0.85, 0.8) skewX(-4deg); }
+    35% { transform: scale(1.05, 1.15) skewX(3deg); }
+    60% { transform: scale(0.95, 0.92) skewX(-2deg); }
+    100% { transform: scale(1.08, 1.3) skewX(5deg); }
+}
+
+/* the thin thread of smoke left when a candle is snuffed */
+.candle__smoke {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 1cqw);
+    width: 0.4cqw;
+    height: 5cqw;
+    translate: -50% 0;
+    border-radius: 50%;
+    background: linear-gradient(to top, rgba(40, 36, 30, 0.6), transparent);
+    filter: blur(0.5px);
+    opacity: 0;
+}
+
+.candles.is-snuffed .candle__smoke {
+    animation: wisp 2.2s ease-out forwards;
+    animation-delay: var(--light-delay);
+}
+
+@keyframes wisp {
+    0% { opacity: 0; transform: translateY(0) scaleY(0.4) skewX(0); }
+    20% { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(-4cqw) scaleY(1.4) skewX(18deg); }
+}
+
+/* Controls */
+
+.controls {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    margin-top: 6cqw;
+}
+
+.controls__side,
+.controls__main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.controls__side--start { gap: 3cqw; }
+.controls__main { gap: 3.6cqw; }
+.controls__side--end { gap: 1.4cqw; translate: 2.6cqw 0; }
+
+.ctl {
+    position: relative;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+    filter: url(#vintage-print) drop-shadow(0 1px 0 rgba(255, 255, 255, 0.12));
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ctl svg {
+    display: block;
+    width: 6.8cqw;
+    height: 6.8cqw;
+}
+
+.ctl--toggle svg,
+.ctl--sound svg {
+    width: 4.6cqw;
+    height: 4.6cqw;
+}
+
+.ctl--play svg {
+    width: 8cqw;
+    height: 8cqw;
+}
+
+.ctl:hover { opacity: 0.5; }
+.ctl:active { transform: translateY(1px); }
+.ctl:focus { outline: none; }
+.ctl:focus-visible { outline: 2px dashed rgba(16, 14, 12, 0.6); outline-offset: 4px; }
+
+.ctl__rivet {
+    position: absolute;
+    left: 50%;
+    bottom: -1.4cqw;
+    width: 1.1cqw;
+    height: 1.1cqw;
+    translate: -50% 0;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.ctl--toggle[aria-pressed="true"] .ctl__rivet {
+    background: radial-gradient(circle at 35% 30%, #5a534a, var(--ink) 65%);
+}
+
+.ctl--play[data-playback="paused"] .ctl__pause,
+.ctl--play[data-playback="playing"] .ctl__play {
+    display: none;
+}
+
+.ctl--sound[data-sound="on"] .ctl__muted,
+.ctl--sound[data-sound="off"] .ctl__waves {
+    display: none;
+}
+
+/* Chain sliders */
+
+.chain {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 4.6cqw;
+}
+
+.chain--volume {
+    width: 15cqw;
+}
+
+.chain__track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2cqw;
+    min-height: 8px;
+    translate: 0 -50%;
+    overflow: hidden;
+}
+
+.chain__track::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--chain) left center / auto 100% repeat-x;
+    opacity: 0.32;
+}
+
+.chain__fill {
+    position: relative;
+    height: 100%;
+    width: 0%;
+    background: var(--chain) left center / auto 100% repeat-x;
+}
+
+.chain__input {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.chain__input::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.chain__input::-moz-range-track { background: transparent; }
+
+.chain__input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 2.9cqw;
+    height: 2.9cqw;
+    min-width: 12px;
+    min-height: 12px;
+    margin-top: calc((4.6cqw - max(2.9cqw, 12px)) / 2);
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: inset 0 0 0 max(0.7cqw, 3px) var(--ink);
+    cursor: grab;
+}
+
+.chain__input::-moz-range-thumb {
+    width: 2.9cqw;
+    height: 2.9cqw;
+    border: max(0.7cqw, 3px) solid var(--ink);
+    border-radius: 50%;
+    background: transparent;
+}
+
+.chain__input:focus { outline: none; }
+.chain__input:focus-visible::-webkit-slider-thumb { outline: 2px dashed rgba(16, 14, 12, 0.6); outline-offset: 2px; }
+
+.progress {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 2.4cqw;
+    margin-top: 4cqw;
+}
+
+.progress__time {
+    flex: 0 0 auto;
+    width: 3.3em;
+    text-align: right;
+    font-size: 3.2cqw;
+    font-weight: 700;
+    font-synthesis: weight;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+    color: rgba(16, 14, 12, 0.74);
+}
+
+.progress__time--end {
+    text-align: left;
+}
+
+.chain--progress {
+    flex: 1 1 auto;
+    cursor: pointer;
+}
+
+.chain--progress:focus { outline: none; }
+.chain--progress:focus-visible { outline: 2px dashed rgba(16, 14, 12, 0.5); outline-offset: 3px; }
+
+.chain__key {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 8cqw;
+    min-width: 30px;
+    height: auto;
+    translate: -20% -50%;
+    color: var(--ink);
+    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.18));
+    pointer-events: none;
+}
+
+/* Iron corner brackets */
+
+.bracket {
+    position: absolute;
+    z-index: 2;
+    width: var(--bracket);
+    aspect-ratio: 1;
+    pointer-events: none;
+    color: var(--ink);
+    filter: url(#vintage-print) drop-shadow(1px 1.5px 0 rgba(0, 0, 0, 0.35));
+}
+
+.bracket svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.bracket--bl { left: 1.6cqw; bottom: 1.6cqw; }
+.bracket--br { right: 1.6cqw; bottom: 1.6cqw; transform: scaleX(-1); }
+.bracket--tr { right: 1.6cqw; top: 1.6cqw; transform: rotate(180deg); }
+
+@media (max-width: 640px) {
+    .psalter { translate: 0 0; }
+    .psalter__hint { font-size: 0.66rem; letter-spacing: 0.22em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-iteration-count: 1 !important;
+    }
+}
