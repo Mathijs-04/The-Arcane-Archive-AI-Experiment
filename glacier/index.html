@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Hoarfrost Saga</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Sky: gradient, stars, moon, shooting stars -->
+    <div class="sky" aria-hidden="true">
+        <div class="sky__inner" data-depth="0.08">
+            <div class="stars" id="stars"></div>
+            <div class="moon"></div>
+        </div>
+        <canvas class="aurora" id="aurora"></canvas>
+    </div>
+
+    <!-- Painted (procedural) forest, back to front, fog woven in between -->
+    <div class="layer layer--far" data-depth="0.22" aria-hidden="true"><canvas id="layer-far"></canvas></div>
+    <div class="rays" data-depth="0.12" aria-hidden="true" id="rays"></div>
+    <div class="fog fog--a" aria-hidden="true"><div class="fog__drift"></div><div class="fog__drift fog__drift--2"></div></div>
+    <div class="layer layer--mid" data-depth="0.5" aria-hidden="true">
+        <canvas id="layer-mid"></canvas>
+        <canvas id="layer-fx"></canvas>
+    </div>
+    <div class="fog fog--b" aria-hidden="true"><div class="fog__drift"></div><div class="fog__drift fog__drift--2"></div></div>
+    <div class="layer layer--near" data-depth="1" aria-hidden="true"><canvas id="layer-near"></canvas></div>
+    <div class="fog fog--c" aria-hidden="true"><div class="fog__drift"></div><div class="fog__drift fog__drift--2"></div></div>
+    <canvas class="frost" id="frost" aria-hidden="true"></canvas>
+
+    <svg class="svg-filters" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <!-- Same worn-print ink as the Archive, so the two feel like siblings -->
+            <filter id="vintage-print" x="-10%" y="-20%" width="120%" height="140%" color-interpolation-filters="sRGB">
+                <feTurbulence type="fractalNoise" baseFrequency="0.042" numOctaves="3" seed="9" result="edgeNoise" />
+                <feDisplacementMap in="SourceGraphic" in2="edgeNoise" scale="0.4" xChannelSelector="R" yChannelSelector="G" result="roughened" />
+                <feGaussianBlur in="roughened" stdDeviation="0.26" result="bleed" />
+                <feColorMatrix in="bleed" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.24 0" result="bleedFaint" />
+                <feMerge result="inkBleed">
+                    <feMergeNode in="bleedFaint" />
+                    <feMergeNode in="roughened" />
+                </feMerge>
+                <feTurbulence type="fractalNoise" baseFrequency="1.35" numOctaves="2" seed="17" result="wearNoise" />
+                <feColorMatrix in="wearNoise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="wearAlpha" />
+                <feComponentTransfer in="wearAlpha" result="wearSpecks">
+                    <feFuncA type="discrete" tableValues="1 1 1 0.9 1 1 0.85 1" />
+                </feComponentTransfer>
+                <feComposite in="inkBleed" in2="wearSpecks" operator="in" />
+            </filter>
+        </defs>
+    </svg>
+
+    <main class="grove">
+        <h1 class="grove__title"><span class="ink">The Hoarfrost Saga</span></h1>
+
+        <div class="card-wrap">
+            <section class="card" aria-label="Player">
+                <div class="card__surface" aria-hidden="true">
+                    <div class="card__texture"></div>
+                    <canvas class="card__patina" id="card-patina"></canvas>
+                </div>
+
+                <div class="card__layout">
+                    <figure class="cover">
+                        <canvas class="cover__art" id="cover-art" width="360" height="360" role="img" aria-label="Cover art"></canvas>
+                    </figure>
+
+                    <div class="info">
+                        <p class="info__kicker" id="kicker">Verse I &middot; of V</p>
+                        <h2 class="info__title"><span class="ink" id="track-title">Keel Beneath the Rime</span></h2>
+                        <p class="info__artist" id="track-artist">Drowned Jarls</p>
+                        <div class="reeds" id="reeds" data-state="idle" aria-hidden="true"></div>
+                    </div>
+
+                    <div class="controls" role="group" aria-label="Playback controls">
+                        <div class="controls__side controls__side--start">
+                            <button type="button" class="ctl ctl--toggle" id="btn-shuffle" aria-pressed="false" aria-label="Shuffle">
+                                <svg viewBox="0 0 24 24"><path d="M3 7h3.5c2.2 0 3.6 1 5 3.2l1.4 2.2c1.4 2.3 2.7 3.6 5 3.6H21M3 17h3.5c1.6 0 2.7-.6 3.7-1.7M14.2 8.6c1-1 2-1.6 3.7-1.6H21M18.5 4.5 21 7l-2.5 2.5M18.5 13.5 21 16l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span class="ctl__seed"></span>
+                            </button>
+                            <button type="button" class="ctl ctl--toggle" id="btn-loop" aria-pressed="false" aria-label="Loop">
+                                <svg viewBox="0 0 24 24"><path d="M4 12.5V11a4 4 0 0 1 4-4h11M16.5 4.5 19 7l-2.5 2.5M20 11.5V13a4 4 0 0 1-4 4H5M7.5 19.5 5 17l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span class="ctl__seed"></span>
+                            </button>
+                        </div>
+
+                        <div class="controls__main">
+                            <button type="button" class="ctl" id="btn-prev" aria-label="Previous track">
+                                <svg viewBox="0 0 24 24"><path d="M5 5.2h2.2v13.6H5zM20 5.5v13L8.6 12z" fill="currentColor"/></svg>
+                            </button>
+                            <button type="button" class="ctl ctl--play" id="btn-play" data-playback="paused" aria-label="Play">
+                                <svg class="ctl__play" viewBox="0 0 24 24"><path d="M6.5 4.2v15.6L19.8 12z" fill="currentColor"/></svg>
+                                <svg class="ctl__pause" viewBox="0 0 24 24"><path d="M6 4.5h4v15H6zM14 4.5h4v15h-4z" fill="currentColor"/></svg>
+                            </button>
+                            <button type="button" class="ctl" id="btn-next" aria-label="Next track">
+                                <svg viewBox="0 0 24 24"><path d="M16.8 5.2H19v13.6h-2.2zM4 5.5v13L15.4 12z" fill="currentColor"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="controls__side controls__side--end">
+                            <button type="button" class="ctl ctl--sound" id="btn-sound" data-sound="on" aria-label="Mute">
+                                <svg viewBox="0 0 24 24"><path d="M3.5 9h3.8L12 5v14l-4.7-4H3.5z" fill="currentColor"/><path class="ctl__waves" d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="ctl__muted" d="m15.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                            </button>
+                            <label class="sr-only" for="volume">Glow</label>
+                            <div class="twig twig--volume">
+                                <div class="twig__track" aria-hidden="true"><div class="twig__fill" id="volume-fill"></div></div>
+                                <input id="volume" class="twig__input" type="range" min="0" max="100" value="70">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress">
+                        <span class="progress__time" id="time-current">00:00</span>
+                        <div class="twig twig--progress" id="progress" role="slider" tabindex="0" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="twig__track" aria-hidden="true"><div class="twig__fill" id="progress-fill"></div></div>
+                            <svg class="twig__leaf" id="progress-leaf" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1 17 10 10 19 3 10z" fill="currentColor"/><path d="M10 4V16" stroke="#8a969c" stroke-width=".9" opacity=".7"/></svg>
+                        </div>
+                        <span class="progress__time progress__time--end" id="time-duration">00:00</span>
+                    </div>
+                </div>
+
+                <div class="vine vine--tr" aria-hidden="true"></div>
+                <div class="vine vine--bl" aria-hidden="true"></div>
+                <div class="vine vine--br" aria-hidden="true"></div>
+            </section>
+        </div>
+
+        <p class="grove__hint">touch the ice to stir the snow</p>
+    </main>
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
